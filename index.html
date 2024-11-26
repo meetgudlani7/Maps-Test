@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Our Love Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      margin: 0;
+      background-color: #ffe6f0;
+      color: #ff3366;
+      text-align: center;
+    }
+
+    #role-selection {
+      margin-top: 50px;
+    }
+
+    #map-container {
+      display: none;
+    }
+
+    #map {
+      height: 70vh;
+      width: 100%;
+      margin-top: 20px;
+      border-radius: 15px;
+      box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    .distance {
+      margin-top: 20px;
+      font-size: 1.5rem;
+      color: #ff6699;
+    }
+
+    .loading {
+      font-size: 1.2rem;
+      color: #888;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 10px;
+      background-color: #ff3366;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #ff6699;
+    }
+  </style>
+</head>
+<body>
+  <h1>Our Love Map ❤️</h1>
+  <div id="role-selection">
+    <p>Who is using the site?</p>
+    <button onclick="selectRole('Pookie')">Pookie</button>
+    <button onclick="selectRole('Chew')">Chew</button>
+  </div>
+
+  <div id="map-container">
+    <p>Even when we're apart, we're always close in our hearts!</p>
+    <div id="map"></div>
+    <div class="distance" id="distance"></div>
+    <p class="loading" id="loading">Fetching your location...</p>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const defaultLocation = [28.6139, 77.209]; // Default location if nothing is stored
+    let myLocation = JSON.parse(localStorage.getItem('Pookie')) || defaultLocation;
+    let gfLocation = JSON.parse(localStorage.getItem('Chew')) || defaultLocation;
+
+    let map, myMarker, gfMarker, userRole;
+
+    // Function to handle role selection
+    function selectRole(role) {
+      userRole = role; // Set the user role
+      document.getElementById('role-selection').style.display = 'none';
+      document.getElementById('map-container').style.display = 'block';
+      initializeMap();
+      fetchLocation(role);
+    }
+
+    // Function to initialize the map
+    function initializeMap() {
+      map = L.map('map').setView(defaultLocation, 6);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+      }).addTo(map);
+
+      // Add markers for both users
+      myMarker = L.marker(myLocation, { icon: createHeartIcon() }).addTo(map).bindPopup("Pookie ❤️").openPopup();
+      gfMarker = L.marker(gfLocation, { icon: createHeartIcon() }).addTo(map).bindPopup("Chew 💕").openPopup();
+
+      // Draw a line between the two locations
+      updateDistanceAndLine();
+    }
+
+    // Function to fetch current location
+    function fetchLocation(role) {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const currentLocation = [position.coords.latitude, position.coords.longitude];
+
+            if (role === 'Pookie') {
+              myLocation = currentLocation;
+              myMarker.setLatLng(myLocation).bindPopup("Pookie ❤️").openPopup();
+              localStorage.setItem('Pookie', JSON.stringify(myLocation));
+            } else if (role === 'Chew') {
+              gfLocation = currentLocation;
+              gfMarker.setLatLng(gfLocation).bindPopup("Chew 💕").openPopup();
+              localStorage.setItem('Chew', JSON.stringify(gfLocation));
+            }
+
+            // Update distance and line
+            updateDistanceAndLine();
+
+            // Remove loading text
+            document.getElementById('loading').style.display = 'none';
+          },
+          (error) => {
+            document.getElementById('loading').textContent = "Unable to fetch your location. Please enable location access.";
+          }
+        );
+      } else {
+        document.getElementById('loading').textContent = "Geolocation is not supported by your browser.";
+      }
+    }
+
+    // Function to update distance and draw line
+    function updateDistanceAndLine() {
+      const line = L.polyline([myLocation, gfLocation], { color: 'pink', weight: 5 }).addTo(map);
+
+      const distance = (map.distance(myLocation, gfLocation) / 1000).toFixed(2); // Distance in kilometers
+      document.getElementById('distance').textContent = `Distance: ${distance} km`;
+    }
+
+    // Function to create a heart icon
+    function createHeartIcon() {
+      return L.divIcon({
+        className: 'heart-icon',
+        html: `<div style="color: #ff3366; font-size: 2rem;">❤️</div>`,
+        iconSize: [30, 30],
+        iconAnchor: [15, 15],
+      });
+    }
+  </script>
+</body>
+</html>
